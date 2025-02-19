@@ -32,7 +32,7 @@
   - updatedAt
 - Todo
   - id (unique, string)
-  - userId ref user.id (reference the user)
+  - userId ref user.id (refers the user)
   - title (string)
   - content (md/text)
   - priority (enum(high,medium,low))
