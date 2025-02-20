@@ -8,9 +8,6 @@ SQLALCHEMY_DATABASE_URL = str(settings.DATABASE_URL)  # "sqlite:///./todos.db"
 if SQLALCHEMY_DATABASE_URL is None:
     raise ValueError("DATABASE_URL environment variable is not set")
 
-if SQLALCHEMY_DATABASE_URL is None:
-    raise ValueError("DATABASE_URL environment variable is not set")
-
 # Convert SQLite URL to async format if using SQLite
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(

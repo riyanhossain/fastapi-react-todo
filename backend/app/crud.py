@@ -1,4 +1,5 @@
 from re import I
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app import models, schemas
@@ -37,4 +38,4 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate):
         return db_user
     except IntegrityError:
         await db.rollback()
-        raise ValueError("User already exists")
+        return HTTPException(status_code=400, detail="User already exists")
