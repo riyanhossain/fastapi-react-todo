@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
-from app import database, crud, schemas
+from app.core import database
+from app import crud, schemas
 
 
 router = APIRouter(prefix="/users", tags=["users"])

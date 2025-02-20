@@ -1,12 +1,9 @@
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
-from dotenv import load_dotenv
-import os
+from .config import settings
 
-load_dotenv()
-
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")  # "sqlite:///./test.db"
+SQLALCHEMY_DATABASE_URL = str(settings.DATABASE_URL)  # "sqlite:///./todos.db"
 
 if SQLALCHEMY_DATABASE_URL is None:
     raise ValueError("DATABASE_URL environment variable is not set")

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from app import crud, schemas, database
+from app.core import database
+from app import crud, schemas
 
 router = APIRouter(prefix="/todos", tags=["todos"])
 

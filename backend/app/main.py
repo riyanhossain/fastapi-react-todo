@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.main import api_router
-from app.database import engine, Base
+
+from .api.main import api_router
+from .core.database import engine, Base
+from .core.config import settings
 
 
 @asynccontextmanager
@@ -34,4 +36,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_router, prefix=settings.API_V1_STR)
