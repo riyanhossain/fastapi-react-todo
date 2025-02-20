@@ -1,6 +1,7 @@
 from datetime import datetime
 import enum
-from pydantic import BaseModel
+from typing import Optional
+from pydantic import BaseModel, ConfigDict
 
 
 class TodoStatus(enum.Enum):
@@ -15,23 +16,18 @@ class TodoPriority(enum.Enum):
     HIGH = "high"
 
 
-class TodoCreate(BaseModel):
-    user: int
-    title: str
-    content: str
-    status: TodoStatus
-    priority: TodoPriority
-
-
 class TodoBase(BaseModel):
     id: int
-    user: int
+    user_id: int
     title: str
     content: str
     status: TodoStatus
     priority: TodoPriority
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        orm_mode = True
 
 
 class UserBase(BaseModel):
@@ -39,11 +35,33 @@ class UserBase(BaseModel):
     name: str
     email: str
     password: str
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+
+    class Config:
+        orm_mode = True
+
+
+class TodoCreate(BaseModel):
+    user_id: int
+    title: str
+    content: str
+    status: TodoStatus
+    priority: TodoPriority
 
 
 class UserCreate(BaseModel):
     name: str
     email: str
     password: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+
+    class Config:
+        orm_mode = True

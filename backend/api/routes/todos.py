@@ -10,7 +10,7 @@ async def read_todos(db: AsyncSession = Depends(database.get_db)):
     return await crud.get_todos(db)
 
 
-@router.post("/", response_model=schemas.TodoBase)
+@router.post("/", response_model=schemas.TodoCreate)
 async def create_todo(
     todo: schemas.TodoCreate, db: AsyncSession = Depends(database.get_db)
 ):
