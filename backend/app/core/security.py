@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
-from fastapi import HTTPException, Request, Response
+from fastapi import Depends, HTTPException, Request, Response
 from passlib.context import CryptContext
+from app.core import database
 from app.core.config import settings
 import jwt
+from app import crud
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -33,7 +35,7 @@ def create_refresh_token(subject: str | Any, expires_delta: timedelta) -> str:
     return encoded_jwt
 
 
-async def get_current_user(request: Request):
+async def get_current_user(request: Request, db=Depends(database.get_db)):
     token = request.cookies.get("access_token")
 
     if not token:
@@ -42,13 +44,24 @@ async def get_current_user(request: Request):
         )
 
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+
+        print(payload)
         email: str = payload.get("sub")
         if not email:
             raise HTTPException(
                 status_code=401, detail={"success": False, "message": "Invalid token"}
             )
-        return email
+
+        db_user = await crud.get_user_by_email(db, email)
+
+        if db_user is None:
+            raise HTTPException(
+                status_code=404,
+                detail={"success": False, "message": "User not found"},
+            )
+
+        return db_user
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(
@@ -65,13 +78,21 @@ async def refresh_token(request: Request, response: Response):
     refresh_token = request.cookies.get("refresh_token")
 
     if not refresh_token:
-        raise HTTPException(status_code=401, detail="No refresh token")
+        raise HTTPException(
+            status_code=401, detail={"success": False, "message": "No refresh token"}
+        )
 
     try:
-        payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(
+            refresh_token, settings.REFRESH_KEY, algorithms=[ALGORITHM]
+        )
+
         email: str = payload.get("sub")
         if not email:
-            raise HTTPException(status_code=401, detail="Invalid refresh token")
+            raise HTTPException(
+                status_code=401,
+                detail={"success": False, "message": "Invalid refresh token"},
+            )
 
         new_access_token = create_access_token(
             subject=email, expires_delta=timedelta(minutes=15)

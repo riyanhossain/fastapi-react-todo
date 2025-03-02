@@ -1,12 +1,17 @@
 from sqlalchemy import Column, DateTime, Enum, Integer, String, ForeignKey, func
 from .core.database import Base
+import uuid
 
 
 class Todo(Base):
     __tablename__ = "todos"
 
     id = Column(
-        Integer, primary_key=True, index=True, nullable=False, autoincrement=True
+        String,
+        primary_key=True,
+        index=True,
+        nullable=False,
+        default=lambda: str(uuid.uuid4()),
     )
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
@@ -31,7 +36,11 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(
-        Integer, primary_key=True, index=True, nullable=False, autoincrement=True
+        String,
+        primary_key=True,
+        index=True,
+        nullable=False,
+        default=lambda: str(uuid.uuid4()),
     )
     name = Column(String, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)

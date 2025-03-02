@@ -2,6 +2,7 @@ from datetime import timedelta
 from fastapi import HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.sql.functions import user
 from app import models, schemas
 from sqlalchemy.exc import IntegrityError
 from app.core.security import (
@@ -101,52 +102,36 @@ async def login(response: Response, db: AsyncSession, user: schemas.UserLogin):
     }
 
 
+# Todo(Create, Update, Delete, Get)
 
-    refresh_token = request.cookies.get("refresh_token")
 
-    if not refresh_token:
-        raise HTTPException(status_code=401, detail="No refresh token")
-
+async def create_todo(
+    db: AsyncSession, todo: schemas.TodoCreate, user: schemas.UserBase
+):
+    db_todo = models.Todo(**todo.model_dump(exclude={"user_id"}), user_id=user.id)
+    db.add(db_todo)
     try:
-        payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=["HS256"])
-        email: str = payload.get("sub")
-        if not email:
-            raise HTTPException(status_code=401, detail="Invalid refresh token")
-
-        new_access_token = create_access_token({"sub": email})
-
-        response.set_cookie(
-            key="access_token",
-            value=new_access_token,
-            httponly=True,
-            samesite="Lax",
-            secure=True,
+        await db.commit()
+        await db.refresh(db_todo)
+        return {
+            "success": True,
+            "data": db_todo,
+            "message": "Todo created successfully",
+        }
+    except HTTPException:
+        await db.rollback()
+        return HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "message": "Todo already exists",
+            },
         )
 
-        return {"success": True, "message": "Token refreshed"}
 
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
+# User (Get, Update, Delete)
 
 
-async def get_todos(db: AsyncSession):
-    result = await db.execute(select(models.Todo))
-    return result.scalars().all()
-
-
-async def create_todo(db: AsyncSession, todo: schemas.TodoCreate):
-    db_todo = models.Todo(**todo.model_dump())
-    db.add(db_todo)
-    await db.commit()
-    await db.refresh(db_todo)
-    return db_todo
-
-
-# async def get_users(db: AsyncSession):
-#     result = await db.execute(select(models.User))
-#     users = result.scalars().all()
-
-#     return [
-#         schemas.Userbase.model_validate(user, from_attributes=True)
-#         for user in users
-#     ]
+async def get_user_by_email(db: AsyncSession, email: str):
+    result = await db.execute(select(models.User).where(models.User.email == email))
+    return result.scalars().first()
