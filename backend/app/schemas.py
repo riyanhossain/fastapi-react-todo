@@ -56,12 +56,9 @@ class UserCreate(BaseModel):
     password: str
 
 
-class UserResponse(BaseModel):
-    id: int
-    name: str
+class UserLogin(BaseModel):
     email: str
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
+    password: str
 
     class Config:
         orm_mode = True
