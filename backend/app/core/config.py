@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import secrets
 
 
 class Settings(BaseSettings):
@@ -9,6 +10,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
     API_V1_STR: str = "/api/v1"
+    SECRET_KEY: str = secrets.token_urlsafe(32)
 
 
 settings = Settings()  # type: ignore

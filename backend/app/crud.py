@@ -1,9 +1,34 @@
-from re import I
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app import models, schemas
 from sqlalchemy.exc import IntegrityError
+
+
+# Auth
+
+
+async def sign_up(db: AsyncSession, user: schemas.UserCreate):
+    db_user = models.User(**user.model_dump())
+    db.add(db_user)
+    try:
+        await db.commit()
+        await db.refresh(db_user)
+        return db_user
+    except IntegrityError:
+        await db.rollback()
+        return HTTPException(status_code=400, detail="User already exists")
+
+# async def login(db: AsyncSession, user: schemas.UserResponse):
+#     result = await db.execute(select(models.User).where(models.User.email == user.email))
+#     db_user = result.scalars().first()
+#     if db_user is None:
+#         return HTTPException(status_code=400, detail="User not found")
+#     if db_user.password != user.password:
+#         return HTTPException(status_code=400, detail="Incorrect password")
+#     return db_user
+
+
 
 
 async def get_todos(db: AsyncSession):
@@ -27,15 +52,3 @@ async def get_users(db: AsyncSession):
         schemas.UserResponse.model_validate(user, from_attributes=True)
         for user in users
     ]
-
-
-async def create_user(db: AsyncSession, user: schemas.UserCreate):
-    db_user = models.User(**user.model_dump())
-    db.add(db_user)
-    try:
-        await db.commit()
-        await db.refresh(db_user)
-        return db_user
-    except IntegrityError:
-        await db.rollback()
-        return HTTPException(status_code=400, detail="User already exists")
