@@ -23,6 +23,7 @@ def verify_password(plain_password, hashed_password):
 
 def create_access_token(subject: str | Any, expires_delta: timedelta) -> str:
     expire = datetime.now(timezone.utc) + expires_delta
+    #print(f"Token Expiry (UTC): {expire}")
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -44,13 +45,14 @@ async def get_current_user(request: Request, db=Depends(database.get_db)):
         )
 
     try:
+        #print(f"Token received: {token}")  # Debugging
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
 
-        print(payload)
         email: str = payload.get("sub")
         if not email:
             raise HTTPException(
-                status_code=401, detail={"success": False, "message": "Invalid token"}
+                status_code=401,
+                detail={"success": False, "message": "Invalid token (email)"},
             )
 
         db_user = await crud.get_user_by_email(db, email)
