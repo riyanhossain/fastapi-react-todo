@@ -30,6 +30,21 @@ class TodoBase(BaseModel):
         from_attributes = True
 
 
+class TodoCreate(BaseModel):
+    user_id: Optional[UUID4] = None
+    title: str
+    content: str
+    status: TodoStatus
+    priority: TodoPriority
+
+
+class TodoUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    status: Optional[TodoStatus] = None
+    priority: Optional[TodoPriority] = None
+
+
 class UserBase(BaseModel):
     id: UUID4
     name: str
@@ -40,14 +55,6 @@ class UserBase(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class TodoCreate(BaseModel):
-    user_id: Optional[UUID4] = None
-    title: str
-    content: str
-    status: TodoStatus
-    priority: TodoPriority
 
 
 class UserCreate(BaseModel):

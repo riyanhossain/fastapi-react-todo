@@ -1,10 +1,11 @@
 from datetime import timedelta
 from fastapi import HTTPException, Request, Response
+from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql.functions import user
 from app import models, schemas
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.core.security import (
     get_password_hash,
     verify_password,
@@ -36,7 +37,7 @@ async def sign_up(db: AsyncSession, user: schemas.UserCreate):
         }
     except IntegrityError:
         await db.rollback()
-        return HTTPException(
+        raise HTTPException(
             status_code=400,
             detail={
                 "success": False,
@@ -52,7 +53,7 @@ async def login(response: Response, db: AsyncSession, user: schemas.UserLogin):
     db_user = result.scalars().first()
 
     if not db_user:
-        return HTTPException(
+        raise HTTPException(
             status_code=404,
             detail={
                 "success": False,
@@ -61,7 +62,7 @@ async def login(response: Response, db: AsyncSession, user: schemas.UserLogin):
         )
 
     if not verify_password(user.password, db_user.password):
-        return HTTPException(
+        raise HTTPException(
             status_code=400,
             detail={
                 "success": False,
@@ -120,12 +121,74 @@ async def create_todo(
         }
     except HTTPException:
         await db.rollback()
-        return HTTPException(
+        raise HTTPException(
             status_code=400,
             detail={
                 "success": False,
-                "message": "Todo already exists",
+                "message": "Todo creation failed",
             },
+        )
+
+
+async def update_todo(db: AsyncSession, todo: schemas.TodoUpdate, todo_id: str):
+    result = await db.execute(select(models.Todo).where(models.Todo.id == todo_id))
+    db_todo = result.scalars().first()
+
+    if not db_todo:
+        raise HTTPException(
+            status_code=404, detail={"success": False, "message": "Todo not found"}
+        )
+
+    update_data = todo.model_dump(exclude={"id", "user_id"})
+
+    if not update_data:
+        raise HTTPException(
+            status_code=400,
+            detail={"success": False, "message": "No valid fields to update"},
+        )
+
+    try:
+        for key, value in update_data.items():
+            setattr(db_todo, key, value)
+
+        await db.commit()
+        await db.refresh(db_todo)
+
+        return {
+            "success": True,
+            "data": db_todo,
+            "message": "Todo updated successfully",
+        }
+
+    except SQLAlchemyError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail={"success": False, "message": "Database error occurred"},
+        )
+
+
+async def delete_todo(db: AsyncSession, todo_id: str):
+    result = await db.execute(select(models.Todo).where(models.Todo.id == todo_id))
+    db_todo = result.scalars().first()
+
+    if not db_todo:
+        raise HTTPException(
+            status_code=404, detail={"success": False, "message": "Todo not found"}
+        )
+
+    try:
+        await db.delete(db_todo)
+        await db.commit()
+        return {
+            "success": True,
+            "message": "Todo deleted successfully",
+        }
+    except SQLAlchemyError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail={"success": False, "message": "Database error occurred"},
         )
 
 
