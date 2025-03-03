@@ -1,10 +1,8 @@
 from datetime import timedelta
-from fastapi import HTTPException, Request, Response
-from pydantic import UUID4
+from fastapi import HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.sql.functions import user
-from app import models, schemas
+from app import schemas, models
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.core.security import (
     get_password_hash,
@@ -200,7 +198,7 @@ async def get_user_by_email(db: AsyncSession, email: str):
     return result.scalars().first()
 
 
-async def update_user(db: AsyncSession, user_id: str, user: schemas.UserUpdate):
+async def update_user(db: AsyncSession, user_id: str, user_data: schemas.UserUpdate):
     result = await db.execute(select(models.User).where(models.User.id == user_id))
     db_user = result.scalars().first()
 
@@ -209,7 +207,7 @@ async def update_user(db: AsyncSession, user_id: str, user: schemas.UserUpdate):
             status_code=404, detail={"success": False, "message": "User not found"}
         )
 
-    update_data = user.model_dump(
+    update_data = user_data.model_dump(
         exclude={"id", "created_at", "updated_at", "password", "email"}
     )
 
