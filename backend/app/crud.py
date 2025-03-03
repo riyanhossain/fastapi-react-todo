@@ -14,36 +14,7 @@ from app.core.security import (
 )
 
 
-# Auth(Signup, Login)
-
-
-async def sign_up(db: AsyncSession, user: schemas.UserCreate):
-    db_user = models.User(
-        **user.model_dump(exclude={"password"}),
-        password=get_password_hash(user.password)
-    )
-    db.add(db_user)
-    try:
-        await db.commit()
-        await db.refresh(db_user)
-        return {
-            "success": True,
-            "data": {
-                "id": db_user.id,
-                "email": db_user.email,
-                "name": db_user.name,
-            },
-            "message": "User created successfully",
-        }
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "success": False,
-                "message": "User already exists",
-            },
-        )
+# Auth(Login)
 
 
 async def login(response: Response, db: AsyncSession, user: schemas.UserLogin):
@@ -195,6 +166,75 @@ async def delete_todo(db: AsyncSession, todo_id: str):
 # User (Get, Update, Delete)
 
 
+async def create_user(db: AsyncSession, user: schemas.UserCreate):
+    db_user = models.User(
+        **user.model_dump(exclude={"password"}),
+        password=get_password_hash(user.password)
+    )
+    db.add(db_user)
+    try:
+        await db.commit()
+        await db.refresh(db_user)
+        return {
+            "success": True,
+            "data": {
+                "id": db_user.id,
+                "email": db_user.email,
+                "name": db_user.name,
+            },
+            "message": "User created successfully",
+        }
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "message": "User already exists",
+            },
+        )
+
+
 async def get_user_by_email(db: AsyncSession, email: str):
     result = await db.execute(select(models.User).where(models.User.email == email))
     return result.scalars().first()
+
+
+async def update_user(db: AsyncSession, user_id: str, user: schemas.UserUpdate):
+    result = await db.execute(select(models.User).where(models.User.id == user_id))
+    db_user = result.scalars().first()
+
+    if not db_user:
+        raise HTTPException(
+            status_code=404, detail={"success": False, "message": "User not found"}
+        )
+
+    update_data = user.model_dump(
+        exclude={"id", "created_at", "updated_at", "password", "email"}
+    )
+
+    if not update_data:
+        raise HTTPException(
+            status_code=400,
+            detail={"success": False, "message": "No valid fields to update"},
+        )
+
+    try:
+        for key, value in update_data.items():
+            setattr(db_user, key, value)
+
+        await db.commit()
+        await db.refresh(db_user)
+
+        return {
+            "success": True,
+            "data": db_user,
+            "message": "User updated successfully",
+        }
+
+    except SQLAlchemyError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail={"success": False, "message": "Database error occurred"},
+        )

@@ -119,3 +119,8 @@ async def refresh_token(request: Request, response: Response):
         raise HTTPException(
             status_code=401, detail={"success": False, "message": "Invalid token"}
         )
+
+
+# Auth(Middleware)
+
+
