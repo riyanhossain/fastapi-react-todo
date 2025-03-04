@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends
-from app.core import database
+from fastapi import APIRouter
 from app import crud, schemas
-from app.api.deps import get_current_user
+from app.api.deps import CurrentUser, SessionDep
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -11,7 +10,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def update_user(
     user_data: schemas.UserUpdate,
     user_id: str,
-    db=Depends(database.get_db),
-    user: schemas.UserBase = Depends(get_current_user),
+    db: SessionDep,
+    user: CurrentUser,
 ):
     return await crud.update_user(db, user_id, user_data)

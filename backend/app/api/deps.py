@@ -6,12 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import database
 from app.core.config import settings
 from app import crud
-from app import schemas
+from app.models import User
 
 
-async def get_current_user(
-    request: Request, db: AsyncSession = Depends(database.get_db)
-) -> schemas.UserBase:
+SessionDep = Annotated[AsyncSession, Depends(database.get_db)]
+
+
+async def get_current_user(request: Request, db: SessionDep) -> User:
     token = request.cookies.get("access_token")
 
     if not token:
@@ -52,5 +53,4 @@ async def get_current_user(
         )
 
 
-
-CurrentUser = Annotated[schemas.UserBase, Depends(get_current_user)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
