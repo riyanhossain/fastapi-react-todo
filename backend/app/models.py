@@ -1,4 +1,5 @@
 from sqlalchemy import Column, DateTime, Enum, Integer, String, ForeignKey, func
+from sqlalchemy.orm import relationship
 from .core.database import Base
 import uuid
 
@@ -29,7 +30,7 @@ class Todo(Base):
     )
 
     # Relationship: Many Todos → One User
-    # owner = relationship("User", back_populates="todos")
+    owner = relationship("User", back_populates="todos")
 
 
 class User(Base):
@@ -45,7 +46,7 @@ class User(Base):
     name = Column(String, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
-    # todos = relationship("Todo", back_populates="owner", cascade="all, delete-orphan")
+    todos = relationship("Todo", back_populates="owner", cascade="all, delete-orphan")
 
     created_at = Column(
         DateTime(timezone=True),
