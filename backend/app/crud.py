@@ -53,6 +53,7 @@ async def login(response: Response, db: AsyncSession, user: schemas.UserLogin):
         samesite="lax",
         secure=True,
     )
+
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
@@ -75,10 +76,8 @@ async def login(response: Response, db: AsyncSession, user: schemas.UserLogin):
 # Todo(Create, Update, Delete, Get)
 
 
-async def create_todo(
-    db: AsyncSession, todo: schemas.TodoCreate, user: schemas.UserBase
-):
-    db_todo = models.Todo(**todo.model_dump(exclude={"user_id"}), user_id=user.id)
+async def create_todo(db: AsyncSession, todo: schemas.TodoCreate, user_id: str):
+    db_todo = models.Todo(**todo.model_dump(exclude={"user_id"}), user_id=user_id)
     db.add(db_todo)
     try:
         await db.commit()
@@ -167,7 +166,7 @@ async def delete_todo(db: AsyncSession, todo_id: str):
 async def create_user(db: AsyncSession, user: schemas.UserCreate):
     db_user = models.User(
         **user.model_dump(exclude={"password"}),
-        password=get_password_hash(user.password)
+        password=get_password_hash(user.password),
     )
     db.add(db_user)
     try:

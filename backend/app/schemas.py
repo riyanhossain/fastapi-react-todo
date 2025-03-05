@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, TypedDict
 from pydantic import UUID4, BaseModel
 
 
@@ -26,9 +26,6 @@ class TodoBase(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 class TodoCreate(BaseModel):
     user_id: Optional[UUID4] = None
@@ -53,9 +50,6 @@ class UserBase(BaseModel):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
-
 
 class UserCreate(BaseModel):
     name: str
@@ -67,9 +61,24 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
-    class Config:
-        from_attributes = True
-
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
+
+
+# Define response schema using TypedDict
+class UserData(TypedDict):
+    id: int
+    email: str
+    name: str
+
+
+class SuccessResponse(TypedDict):
+    success: bool
+    data: UserData
+    message: str
+
+
+class ErrorResponse(TypedDict):
+    success: bool
+    message: str

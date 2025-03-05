@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from app import crud, schemas
 from app.api.deps import CurrentUser, SessionDep
 
@@ -11,7 +11,7 @@ async def create_todo(
     db: SessionDep,
     user: CurrentUser,
 ):
-    return await crud.create_todo(db, todo, user)
+    return await crud.create_todo(db, todo, user_id=str(user.id))
 
 
 @router.patch("/update/{todo_id}")
