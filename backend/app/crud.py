@@ -32,7 +32,7 @@ async def login(response: Response, db: AsyncSession, user: schemas.UserLogin):
 
     if not verify_password(user.password, db_user.password):
         raise HTTPException(
-            status_code=400,
+            status_code=401,
             detail={
                 "success": False,
                 "message": "Incorrect password",
@@ -225,7 +225,9 @@ async def update_user(db: AsyncSession, user_id: str, user_data: schemas.UserUpd
 
         return {
             "success": True,
-            "data": db_user,
+            "data": {
+                "name": db_user.name,
+            },
             "message": "User updated successfully",
         }
 

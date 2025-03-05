@@ -1,7 +1,8 @@
-from typing import Generator
-from fastapi.testclient import TestClient
+from typing import Generator, AsyncGenerator
 import pytest
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+import pytest_asyncio
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.main import app
 from app.core.database import Base, get_db
@@ -16,34 +17,37 @@ TestingSessionLocal = async_sessionmaker(
 )
 
 
-async def override_get_db():
-    async with TestingSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+@pytest_asyncio.fixture(scope="function")
+async def db() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Create a fresh database on each test case.
+    """
+    # Create the tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-
-@pytest.fixture(scope="function")
-async def db():
+    # Create a session for testing
     async with TestingSessionLocal() as session:
         yield session
 
-
-@pytest.fixture(autouse=True, scope="session")
-async def setup_db():
+    # Drop the tables
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)  # Create tables
-
-    yield  # Run the test
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)  # Drop tables after the test
+        await conn.run_sync(Base.metadata.drop_all)
 
 
-@pytest.fixture(scope="module")
-def client() -> Generator[TestClient, None, None]:
+@pytest.fixture(scope="function")
+def client(db: AsyncSession) -> Generator[TestClient, None, None]:
+    """
+    Create a test client that uses the test database.
+    """
+
+    def override_get_db():
+        try:
+            yield db
+        finally:
+            pass
+
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
+    with TestClient(app) as test_client:
+        yield test_client
     app.dependency_overrides.clear()
